@@ -1,27 +1,9 @@
-Section Relations.
+Require Import Coq.Relations.Relations.
+
+Section LatticeOrder.
 
   Variable A : Type.
-
-  Definition Rel := A -> A -> Prop.
-
-  Variable R : Rel.
-
-  Definition reflexive := forall x, R x x.
-
-  Definition symmetric := forall x y, R x y -> R y x.
-
-  Definition antisymmetric := forall x y, R x y -> R y x -> x = y.
-
-  Definition transitive := forall x y z, R x y -> R y z -> R x z.
-
-  Definition order := reflexive /\ antisymmetric /\ transitive.
-
-End Relations.
-
-Section Lattice.
-
-  Variable A : Type.
-  Variable R : Rel A.
+  Variable R : relation A.
   Hypothesis ordered : order A R.
 
   Definition upper_bound x y ub := R x ub /\ R y ub.
@@ -31,8 +13,16 @@ Section Lattice.
     forall ub', upper_bound x y ub' -> R ub ub'.
 
   Theorem lub_unique :
-    forall x y, exists z, lub x y z -> unique (lub x y) z.
-  Admitted.
+    forall x y z, lub x y z -> unique (lub x y) z.
+  Proof.
+    intros x y z (Hub1,HR1).
+    split.
+    split; assumption.
+    intros z' (Hub2,HR2).
+    apply (ord_antisym _ _ ordered).
+    apply HR1; assumption.
+    apply HR2; assumption.
+  Qed.
 
   Definition lower_bound x y lb := R lb x /\ R lb y.
 
@@ -41,15 +31,43 @@ Section Lattice.
     forall lb', lower_bound x y lb' -> R lb' lb.
 
   Theorem glb_unique :
-    forall x y, exists z, glb x y z -> unique (glb x y) z.
-  Admitted.
+    forall x y z, glb x y z -> unique (glb x y) z.
+  Proof.
+    intros x y z (Hlb1,HR1).
+    split.
+    split; assumption.
+    intros z' (Hlb2,HR2).
+    apply (ord_antisym _ _ ordered).
+    apply HR2; assumption.
+    apply HR1; assumption.
+  Qed.
 
-  Definition lattice :=
-    forall x y,
-      (exists u, lub x y u) /\
-      (exists l, glb x y l).
+  Record lattice_ord : Prop := {
+    lattice_exists_meet : forall x y, exists u, lub x y u;
+    lattice_exists_join : forall x y, exists u, glb x y u
+  }.
 
-End Lattice.
+End LatticeOrder.
+
+
+Section LatticeAlgebra.
+
+  Variable A : Type.
+
+  Record lattice := {
+    meet : A -> A -> A;
+    join : A -> A -> A;
+    lat_meet_comm : forall a b, meet a b = meet b a;
+    lat_join_comm : forall a b, join a b = join b a;
+    lat_meet_assoc : forall a b c, meet a (meet b c) = meet (meet a b) c;
+    lat_join_assoc : forall a b c, join a (join b c) = join (join a b) c;
+    lat_meet_idem : forall a, meet a a = a;
+    lat_join_idem : forall a, join a a = a;
+    lat_meet_absorbs : forall a b, meet a (join a b) = a;
+    lat_join_absorbs : forall a b, join a (meet a b) = a;
+  }.
+
+End LatticeAlgebra.
 
 
 Section Ensembles.
